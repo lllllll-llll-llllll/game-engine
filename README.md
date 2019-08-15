@@ -11,7 +11,6 @@ the script is composed of multiple lines of unindented text that start with a co
 
 SAY
 >say myname hello world.
-
 say is the command which will enable say() to run.
 myname is the $speaker.
 hello world. is considered the $speech.
