@@ -24,7 +24,7 @@ SET
     set myname michael
     set is the command which will enable setvar() to run.
     myname is the variable name to be assigned.
-    michael is the variables assigned value.
+    michael is the variable's assigned value.
 
 if the command is , then the function set() will run. it will create and assign the variable to value at a global scope. the engine actually prefixes all script variables assigned using with "s_", so for this instance to access that variable using the autoit engine you would be using <$s_myname>. within the script however you can just use . variable substitution enables you to replace any word enclosed in brackets like [myname] and it will be replaced with "michael".
 
