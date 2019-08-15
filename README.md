@@ -11,9 +11,10 @@ the script is composed of multiple lines of unindented text that start with a co
 
 SAY
 >say myname hello world.
-say is the command which will enable say() to run.
-myname is the $speaker.
-hello world. is considered the $speech.
+*say is the command which will enable say() to run.
+*myname is the $speaker.
+*hello world. is considered the $speech.
+
 if the command is <say>, then the function say() will run. it will use the word after <say>, which is <myname> in this case, and set that to $speaker. every word after the speaker is considered the $speech. the $speaker and $speech are used by dialogue() to output $speaker to $idspeaker and $speech to $idspeech. $speaker and $speech are global engine variables not directly accessible from the script. the $speaker's name appears topleft of the $speech textbox. the $speech appears in the textbox itself and wordwraps. if a head graphic for the $speaker is set using <head myname myface.bmp> then myface.bmp will be displayed on $idhead when that speaker is talking. the speech output speed is determined by [chatspeed], higher values are slower. after the speech is finished displaying, continue() will run, which pauses the script until you press spacebar.
 
 
