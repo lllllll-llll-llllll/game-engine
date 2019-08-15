@@ -20,7 +20,8 @@ if the command is <say>, then the function say() will run. it will use the word 
 
 SET
 
-set myname michael
+>set myname michael
+
 set is the command which will enable setvar() to run.
 myname is the variable name to be assigned.
 michael is the variables assigned value.
@@ -29,7 +30,8 @@ if the command is <set>, then the function set() will run. it will create and as
 
 @ (MACROS)
 
-@s set
+>@s set
+
 @ is the command prefix which enables setmacro() to run.
 s is the assigned macro's name.
 set is the assigned macro's substitution value.
@@ -38,16 +40,16 @@ set is the assigned macro's substitution value.
 
 VARIABLE EXPANSION
 
-there is an order to how expansion occurs.
-macro > variables > math
+there is an order to how expansion occurs:
+>macro > variables > math
 
 
-MACROS
+#MACROS
 
 macro prefixes expand if the first word is a valid macro's name.
 
 
-VARIABLES
+#VARIABLES
 
 variables expand bracketed words into that variable's value.
 "[name] and [enemy[number]]" will expand "name" first, then "number", then "enemy#".
