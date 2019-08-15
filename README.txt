@@ -1,4 +1,4 @@
-visual novel game engine / scripting language
+visual novel scripting engine
 
 this is a visual novel engine built using autoit. au3 files are autoit scripts that can be interpreted directly using the latest version of autoit. they can also be compiled to an executable to run on systems that don't have autoit installed. game-engine.au3 will be referred to as the engine. create a textfile script.txt in the same folder as the engine to begin creating a visual novel. this textfile will be known as the script.
 
