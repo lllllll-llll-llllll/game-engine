@@ -97,11 +97,12 @@ func script()
 
 	  ;input
 		 setmacro()
-		 setmath()
+		 ;setmath()
 		 setvar()
 		 sethead()
 
 	  ;flow
+		 subroutine()
 		 iftrue()
 		 goto()
 		 wait()
@@ -344,7 +345,7 @@ func setmath()		;	[math]	[var]	[value]	[value]	[...]
 
    assign('s_' & $a[2], $return, 3)
 
-   if $echo then msgbox(0, 'setmath - ' & $math, $var & ': '& $return & @CRLF & $s)
+   if $echo then msgbox(0, 'setmath here- ' & $math, $var & ': '& $return & @CRLF & $s)
 
 EndFunc
 
@@ -474,7 +475,7 @@ func prefixcheck()
 	  ;END, FLAG POP
 	  if $a[1] = 'end'	then	;reset $is = ''
 		 _arraydelete($history, number(ubound($history,1) - 1))
-		 if $echo then msgbox(0, 'prefixcheck - end', 'flag removed')
+		 if $echo then msgbox(0, 'prefixcheck - end', 'history flag removed')
 
 	  EndIf
 
@@ -483,9 +484,27 @@ func prefixcheck()
 EndFunc
 
 
+#cs
+lisp math expressions
+
+set num 10
+set x (ran 1 (num))
+
+first search for ()										;regex for ()
+   found: check if it contains spaces.					;finds (num)
+	  yes:  get the first word as the math command.		;skip
+			math command the other values.				;skip
+	  no: check if it contains only A-Z					;contains only a-z
+		 yes:  check if it's a set variable				;isdefined($s_num) = true?
+			   expand to that variable's value.			;if so, replace the regex result of the array with the variable's eval() value
+		 no:   it's just a regular number.				;skip
+
+#ce
+
+
 func iftrue()
    if $a[1] = 'if' then	;	[ if ]  [ X ]  [ oper ]  [ Y ]
-	  	  _arraydisplay($a)
+	  _arraydisplay($a)
 
 	  if execute('(' & $a[2] & ') ' & $a[3] & ' (' & $a[4] & ')') Then
 		 ;IF-YES
@@ -499,16 +518,82 @@ func iftrue()
 
 	  EndIf		;history flag is set either ifyes/ifno
 
-
    ;CASE STATEMENT
    elseif $a[1] = 'case' and ubound($a,1) = 3 then	;	1[ if ] 	2[ X ]
 	  _arrayadd($history, $a[2])
-
 	  if $echo then msgbox(0, 'iftrue', 'case flag set')
 
    EndIf
 
 EndFunc
+
+
+#Region
+;	if a1 is 'do'
+;	attempt to goto a2, if nothing is found just skip this
+;	if the label is found, goto it
+;	set a func-##
+;
+;
+;
+;
+;
+#EndRegion
+
+
+func subroutine()	;	[ ]   [ do ]   [ label ]
+   ;because of macros it might be impossible to find '(to) label' if they are using a macro that expands
+   ;macro expansion will need to occur during each iteration of the search below
+   ;we might need to rework the macro/variable expansions (math too?) so we can just input a line and have the result returned
+   ;we can probably just add a parameter and at the beginning and use that are the input instead of taking script[line]
+   ;for now the goal is to see if it can even work at all
+
+   ;the line numbers might need ot be line+1 to proceed to the next thing? i forget how script() is incrementing.
+
+   if $a[1] = 'do' and ubound($a,1) = 3 then 	;go to subroutine
+	  local $count = 1
+	  local $target = string('to ' & $a[2])
+
+	  if $echo then msgbox(0, 'subroutine goto', $s &@CRLF& 'target: ' & $target)
+
+	  While $count < $script[0]					;	iterate through script looking for 'to label'
+		 if $target = $script[$count] Then		;	'to label' found
+			_ArrayAdd($history, 'sub' & $line)	;	add flag
+			$line = $count						;	set line to the found function
+			exitloop
+
+		 else
+			$count+=1
+
+		 EndIf
+
+	  WEnd
+
+   EndIf
+
+   if $a[1] = 'return' then	;return from subroutine
+	  if ubound($history,1) > 0 then
+		 if $echo then msgbox(0, 'reaches return','')
+
+			_arraydisplay($history)
+
+		 local $target = $history[number(ubound($history,1) - 1)]	;target line = last element of history
+		 if StringLeft($target, 3) = 'sub' then $target = StringTrimLeft($target,3)
+		 $line = $target
+
+		 if $echo then msgbox(0, 'subroutine return', 'line/target: ' & $line &@CRLF& 'history: ' & $history[number(ubound($history,1) - 1)])
+
+
+		 _ArrayPop($history)
+
+	  EndIf
+
+   endif
+
+EndFunc
+
+
+
 
 
 
@@ -529,9 +614,7 @@ func goto()
 
 		 EndIf
 
-
 	  else
-
 		 local $count = 1
 		 local $string = ''
 
@@ -541,13 +624,12 @@ func goto()
 
 			if $string = $a[2] then
 			   if $echo then msgbox(0, $script[$line], 'going to line ' &@CRLF& $script[$count])
-			   $line =  number($count)
-			   Return
+			   $line =  $count
+			   ExitLoop		;CHANGED
 
 			Else
 			   ;msgbox(0, 'false', 'checking line ' & $count, 100)
-			   $count = number($count + 1)
-
+			   $count+=1
 
 			EndIf
 
@@ -556,6 +638,7 @@ func goto()
 	  EndIf
 
    EndIf
+
 EndFunc
 
 
