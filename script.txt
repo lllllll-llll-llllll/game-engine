@@ -1,18 +1,34 @@
 echo on
+# debugging purposes
+
 do routine1
+# goto line containing 'to routine1' and execute its code
+
 do routine3
+# goto line containing 'to routine1' and execute its code
+
 ran random 1 100
+# set variable 'random' to a random integeter between 1 and 100
+
 say name [random]
+# output the value of 'random' as spoken by 'name'
+
 set gold 24
+# set variable 'gold' to 24
+
 set hp 14
+# set variable 'hp' to 14
 
 if [gold] = ([hp] + 10)
+# the expressions are expanded and evaluated. if true it runs lines starting with 'y', if false 'n'
 	y say name yes.
 	y say name gold is 34.
 	if [hp] = 14
+	# nested if
 		y say name hp is 14.
 		n say name hp isn't 14.
 	end
+	# end statement to close the preceding if condition
 	n say name no.
 	n say name gold isn't 34.
 end
@@ -23,9 +39,12 @@ case [gold]
 end
 
 to routine1
+# defines a subroutine 'routine1'
 	do routine2
 	say name this is routine1.
+	# the code of 'routine1'
 return
+# the end statement for subroutines to return from where 'do routine1' was called
 
 to routine2
 	say name this is routine2 called from within routine1.
@@ -36,5 +55,7 @@ to routine3
 return
 
 wait 100
+# halt the script for '100' seconds
 exit
+# exit the script
 
