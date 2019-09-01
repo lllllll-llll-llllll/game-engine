@@ -1,6 +1,6 @@
 echo on
 do routine1
-do routine2
+do routine3
 ran random 1 100
 say name [random]
 set gold 24
