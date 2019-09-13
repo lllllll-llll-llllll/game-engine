@@ -1,4 +1,5 @@
-#Region		includes
+#Region		boilerplate
+#include <Date.au3>
 #include <GUIConstantsEx.au3>
 #include <MsgBoxConstants.au3>
 #include <WindowsConstants.au3>
@@ -20,6 +21,7 @@
 #include <String.au3>
 #include <StringConstants.au3>
 
+
 Opt("GUIOnEventMode", 1)
 AutoItSetOption("PixelCoordMode", 0)
 AutoItSetOption("MouseCoordMode", 0)
@@ -32,26 +34,23 @@ AutoItSetOption("MouseCoordMode", 0)
    GUICtrlcreateGraphic(0,200,300,100,$SS_WHITERECT)
 
    global $idspeaker = GUICtrlCreateLabel("", 10, 205, 100, 20)
-   guictrlsetdata(-1, "Name")
+   guictrlsetdata(-1, "Speaker name")
 
    global $idspeech = GUICtrlCreateLabel("", 10, 225, 280, 65)
-   guictrlsetdata(-1, "Text they are saying goes here. Text they are saying goes here. Text they are saying goes here. Text they are saying goes here. ")
+   guictrlsetdata(-1, "Text they are saying goes here.")
 
 GUISetOnEvent($GUI_EVENT_CLOSE, "X")
 GUISetState()
-
 Func X()
-  Exit
+Exit
 EndFunc
 
 
- #endregion
 
-
-global const			 $pi = 3.14159265358979323846
-global const			$tau = $pi*2
-global const		 $golden = 1.61803398874989484820
-global Const		  $euler = 2.71828182845904523536
+global const			 $s_pi = 3.14159265358979323846
+global const			$s_tau = $s_pi*2
+global const		 $s_golden = 1.61803398874989484820
+global Const		  $s_euler = 2.71828182845904523536
 
 global $script = FileReadToArray("script.txt")
 _arrayinsert($script, 0, ubound($script))
@@ -60,89 +59,306 @@ global $ap[1]		;params as array
 global $pause = false
 global $echo = false
 global $line = 1
+global $difference = 0
 global $s = ''
 global $a[1000]
+global $s_time = 'time'
 
-global $history[] = []
+global $choice[1]
+global $history[1]
+	   $history[0] = 'history'
 global $o_chatspeed = 20
 global $o_title = 'Game Engine'
 
-
-;_ArrayAdd($history
-
+#EndRegion
 
 
 script()
 
 func script()
    while $line <= $script[0]
-   ;get current $line in [$s]tring and [$a]rray format
-	  $s = string($script[$line])
-	  $s = StringReplace($s,@TAB,"")	;remove all tabs
-	  $a = StringSplit($s, ' ')
+	  $s = string($script[$line])		;set (s)tring as current line of script
+	  $s = StringReplace($s,@TAB,"")	;remove tabs from (s)
+	  $a = StringSplit($s, ' ')			;set (a)rray to (s) delimited by spaces
+	  $s_time = _NowTime()
 
-   if $a[1] then
-	  _arraydisplay($history)
+	  if $a[1] then	;skips empty lines
+		 if ubound($history) = 0 then _arrayadd($history, 'history')
+		 if $echo then _arraydisplay($history)
+		 if $echo then msgbox(0,'current line:' & $line, $s)
 
-	  ;preprocessor
+		 ;BEFORE
 		 prefixcheck()
 		 expandmacro()
 		 expandvars()
 		 expandmath()
 		 setparams()
 
-	  ;config
-		 title()
-		 echo()
+		 ;MAIN ROUTINE
+		 master()
 
-	  ;input
-		 setmacro()
-		 ;setmath()
-		 setvar()
-		 sethead()
+	  EndIf
 
-	  ;flow
-		 subroutine()
-		 iftrue()
-		 goto()
-		 wait()
-		 ;rem()
-
-	  ;output
-		 show()
-		 say()
-   EndIf
-
-	  $line+=1
+	  $line+=1		;advance line down by 1
 
    WEnd
 
 EndFunc
 
+
+
+func master()
+   if $echo then msgbox(0,'master', 'a[1] is ' & $a[1])
+   local $prefix = stringleft($history[number(ubound($history, 1)-1)], 2)
+
+   if $prefix = 'in' or $prefix = 'x' or $prefix = 'wn' Then
+	  switch $a[1]
+		 case 'if'
+			iftrue()
+
+		 case 'end', 'else'
+			end()
+
+		 case 'while'
+			loopwhile()
+
+		 case 'choice'
+			choice()
+
+	  EndSwitch
+
+   elseif $prefix = 'ch' Then
+	  choicebuild()
+	  end()
+	  _arraydisplay($choice)
+
+   else
+	  switch $a[1]
+		 ;CONFIG
+		 case 'title'
+			title()
+		 case 'echo'
+			echo()
+
+
+		 ;OUTPUT
+		 case 'show'
+			show()
+
+		 case 'say'
+			say()
+
+
+		 ;INPUT
+		 case '@'
+			setmacro()
+
+		 case 'math'
+			;nothing
+
+		 case 'set'
+			setvar()
+
+		 case 'head'
+			sethead()
+
+
+		 ;MISC
+		 case 'if'
+			iftrue()
+
+		 case 'end', 'else'
+			end()
+
+		 case 'wait'
+			wait()
+
+		 case 'rem'
+			rem()
+
+		 case 'exit'
+			endscript()
+
+		 case 'choice'
+			choice()
+
+
+		 ;JUMPS
+		 case 'while'
+			loopwhile()
+
+		 case 'call', 'return'
+			subroutine()
+
+		 case 'goto'
+			goto()
+
+	  EndSwitch
+
+   EndIf
+EndFunc
+
 #cs
+CHOICE()
+   set flag: 	ch
+   the only routine to run during CHOICE- is choice().
 
-history = []
+   $choice is an array
 
+   add only the first char to $choice[0]
+   _arrayadd full string to $choice
+   repeat
 
+   we end up with $choice = [123, '1 trade', '2 talk', '3 leave']
+   only END will stop this.
+END
+   add @CRLF to end of each array element greater than 0
 
+   convert the array to $choice[1+] to $string
 
+   send $string to dialogue
+   display $string
 
+   check for flag ch-
+   choose()
 
+CHOOSE()
+   pause script
 
+   split $string into individual chars
 
-
+   create hotkeys for each char
 #ce
 
-func setmacro(); [@w] [say] [wizard]
+func choice()
+   _ArrayAdd($history, 'ch')
+
+EndFunc
+
+
+func choicebuild()
+   if $a[1] = 'end' Then return
+   $choice[0] = $choice[0] & stringleft($a[1], 1)
+   _ArrayAdd($choice, $s)
+
+EndFunc
+
+
+func choose()
+   local $choicechars = $choice[0]
+   _arraydelete($choice, 0)
+   local $string = _arraytostring($choice, @CRLF)
+   dialogue('choice', $string)
+
+EndFunc
+
+
+
+func prefixcheck()
+   if ubound($history,1) > 1 then
+	  ;CASE STRIP
+	  if $a[1] = $history[number(ubound($history,1) - 1)] then	;check if a[1] = rightmost $history element
+		 $a[0] = _arraydelete($a, 1)	;	if true, strip a1 (the case #) so the line runs
+		 if $echo then msgbox(0, 'prefixcheck - case', 'case flag removed')
+
+	  EndIf
+
+   EndIf
+EndFunc
+
+
+func end()
+   if $a[1] = 'end'	then
+	  local $prefix = stringleft($history[number(ubound($history, 1)-1)], 2)
+
+	  if stringleft($history[number(ubound($history, 1)-1)], 1) = 'w' then
+		 local $jump = stringtrimleft($history[number(ubound($history, 1)-1)], 2)
+		 if $prefix = 'wy' Then ;go back to $jump
+			_arraypop($history)
+			$line = number($jump - 1)
+			if $echo then msgbox(0, 'end - wy', 'history removed, jumping to line:' & $jump)
+
+		 elseif $prefix = 'wn' Then	;remove history and continue
+			_arraypop($history)
+			if $echo then msgbox(0, 'end - wn', 'history removed')
+
+		 EndIf
+
+	  Else
+		 if $echo then msgbox(0,'end history check before delete', $history[number(ubound($history,1) - 1)])
+
+		 if $prefix = 'ch' Then	;go to choose(), then dialogue().
+			choose()
+			_arraypop($history)
+			if $echo then msgbox(0, 'end', 'choice history removed')
+
+		 Else
+			_arraypop($history)
+			if $echo then msgbox(0, 'end', 'history removed')
+
+			EndIf
+
+	  EndIf
+
+   elseif $a[1] = 'else' then
+	  if $history[number(ubound($history,1) - 1)] = 'x' then
+
+	  elseif $history[number(ubound($history,1) - 1)] = 'iy' then
+		 _arraypop($history)
+		 _arrayadd($history, 'in')
+
+	  elseif $history[number(ubound($history,1) - 1)] = 'in' then
+		 _arraypop($history)
+		 _arrayadd($history, 'iy')
+
+	  EndIf
+
+   EndIf
+EndFunc
+
+
+
+func iftrue()
+   if $a[1] = 'if' then	;	[ if ]  [ true / false ]
+	  if $echo then _arraydisplay($a)
+	  local $prefix = $history[number(ubound($history,1) - 1)]
+	  if $echo then msgbox(0, 'iftrue', 'prefix: ' & $prefix)
+
+	  if $prefix = 'x' or $prefix = 'in' or $prefix = 'wn' then
+		 _arrayadd($history, 'x')
+		 if $echo then msgbox(0, 'iftrue', 'x flag set')
+
+	  elseif $a[2] = 'true' then
+		 ;IF-YES
+		 _arrayadd($history, 'iy')
+		 if $echo then msgbox(0, 'iftrue', 'ifyes flag set')
+
+	  Else
+		 ;IF-NO
+		 _arrayadd($history, 'in')
+		 if $echo then msgbox(0, 'iftrue', 'ifno flag set')
+
+	  EndIf		;history flag is set either iy / in / x
+
+
+   ;CASE STATEMENT
+   elseif $a[1] = 'case' and ubound($a,1) = 3 then	;	1[ if ] 	2[ X ]
+	  _arrayadd($history, 'c' & $a[2])
+	  if $echo then msgbox(0, 'iftrue', 'case flag set')
+
+   EndIf
+EndFunc
+
+
+func setmacro(); 		[@w] [say] [wizard]
    if StringLeft($a[1], 1) = '@' then ;define a new macro if line starts with @
 	  local $value = _arraytostring($a, ' ', 2)	;	say w
 	  local $name = StringTrimLeft($a[1], 1)	;	w
-	  assign('m_' & $name, $value, 2)			;	$m_w = say w
+	  assign('m_' & $name, $value, 2)			;	$m_w = say wizard
 
 	  if $echo then msgbox(0,'setmacro - ' & $s, $name & ': ' & eval('m_' & $name))
 
    EndIf
-
 EndFunc
 
 
@@ -157,60 +373,71 @@ func expandmacro();		macro expansion
 	  if $echo then msgbox(0,'expand macro', $a[1] & @CRLF & $s)	;w
 
    EndIf
-
 EndFunc
 
 
 
-func expandvars();	variable substitution
-   local $regex[100]
-   while 1	;regex for chars contained in []
+func expandvars();		variable substitution
+   if $a[1] = 'rem' then
+	  Return
 
-	  $regex = StringRegExp($s, '(\[[^\W]*\])', $STR_REGEXPARRAYMATCH)		;return [gold]
-	  if not @error then	;regex[0] = [gold]
-		 local $name = stringtrimright(StringTrimLeft($regex[0], 1), 1)	;return	gold
-		 local $value = eval('s_' & $name)								;return	25
+   Else
+	  local $regex[100]
+	  while 1	;regex for chars contained in []
 
-		 if $echo then msgbox(0, 'expand vars test ', $name )
+		 $regex = StringRegExp($s, '(\[[^\W]*\])', $STR_REGEXPARRAYMATCH)		;return [gold]
+		 if not @error then	;regex[0] = [gold]
+			local $name = stringtrimright(StringTrimLeft($regex[0], 1), 1)	;return	gold
+			local $value = eval('s_' & $name)								;return	25
 
-		 $s = StringReplace($s, $regex[0], $value, 1, 0)
-		 $a = Stringsplit($s, ' ')
+			if $echo then msgbox(0, 'expand vars test ', $name )
 
-		 if $echo then msgbox(0, 'expand vars - ', $name &': '& $value & @CRLF & $s)
+			$s = StringReplace($s, $regex[0], $value, 1, 0)
+			$a = Stringsplit($s, ' ')
 
-	  Else
-		 ExitLoop
+			if $echo then msgbox(0, 'expand vars - ', $name &': '& $value & @CRLF & $s)
 
-	  EndIf
+		 Else
+			ExitLoop
 
-   WEnd
+		 EndIf
 
+	  WEnd
+
+   EndIf
 EndFunc
 
 
 
 func expandmath();		evaluate math expressions
-   local $regex[5]
-   while 1	;do regex and look for chars contained in { }		'(\(.*\))'	original, doesnt work		'(\([^()[:alpha:]]*\))'		revised, works
-	  local $regex = StringRegExp($s, '(\([^()[:alpha:]]*\))', $STR_REGEXPARRAYMATCH)	;return {5 + 5}
-	  if not @error Then ;need to get (1) from (1)text(2)
+   If $a[1] = 'rem' then
+	  Return
 
-		 _arraydisplay($regex)
+   Else
+	  local $regex[5]
+	  while 1	;do regex and look for chars contained in { }		'(\(.*\))'	original, doesnt work		'(\([^()[:alpha:]]*\))'		revised, works
+		 local $regex = StringRegExp($s, '(\([^()[:alpha:]]*\))', $STR_REGEXPARRAYMATCH)	;return {5 + 5}
+		 if not @error Then ;need to get (1) from (1)text(2)
 
-		 ;local $name = stringtrimright(StringTrimLeft($regex[0], 1), 1)	;	return	5 + 5
-		 local $name = $regex[0]
-		 local $value = execute($name)							;			return	10
+			if $echo then _arraydisplay($regex)
 
-		 $s = StringReplace($s, $regex[0], $value, 1, 0)
-		 $a = Stringsplit($s, ' ')
+			;local $name = stringtrimright(StringTrimLeft($regex[0], 1), 1)	;	return	5 + 5
+			local $name = $regex[0]
+			local $value = execute($name)							;			return	10
 
-		 if $echo then msgbox(0, 'expand math - ', $name &': '& $value & @CRLF & $s)
+			$s = StringReplace($s, $regex[0], $value, 1, 0)
+			$a = Stringsplit($s, ' ')
 
-	  Else
-		 ExitLoop
+			if $echo then msgbox(0, 'expand math - ', $name &': '& $value & @CRLF & $s)
 
-	  EndIf
-   WEnd
+		 Else
+			ExitLoop
+
+		 EndIf
+
+	  WEnd
+
+   EndIf
 EndFunc
 
 
@@ -224,7 +451,7 @@ func setparams()
 EndFunc
 
 
-func setmath()		;	[math]	[var]	[value]	[value]	[...]
+func setmath()		;	[math]	[var]	[value]	[value]	[...] ???????
    local $math = $a[1]
    local $var = $a[2]
    local $x = $a
@@ -233,7 +460,7 @@ func setmath()		;	[math]	[var]	[value]	[value]	[...]
    local $return = 0
 
 
-
+   ;dont use any of this for now
 
    Switch $math
 	  case 'ABS'          	;absolute
@@ -281,7 +508,7 @@ func setmath()		;	[math]	[var]	[value]	[value]	[...]
 
 		 WEnd
 
-	  case 'E', 'EULER'		;euler's constant
+	  case 'E', 'EULER'		;euler's ??
 		 $result = $euler
 
 	  case 'EXP', 'EXPONENT'	;exponentiation
@@ -337,7 +564,7 @@ func setmath()		;	[math]	[var]	[value]	[value]	[...]
 	  case 'TAN'          	;tangent
 		 $return = tan($x[0])
 
-	  case 'TAU'				;tau constant
+	  case 'TAU'				;tau???
 
    EndSwitch
 
@@ -352,8 +579,6 @@ EndFunc
 
 func setvar()
    if $a[1] = 'set' then 	;set variable a[2] to a[3]+
-	  ;if $echo then msgbox(0,'setvar - ' & $s, $a[1] & @CRLF & $sp, 100)
-
 	  local $array = $ap
 	  local $name = $ap[0]
 	  _arraydelete($ap,0) ;remove ap[1]
@@ -365,200 +590,58 @@ func setvar()
 	  if $echo then msgbox(0, 'setvar - ' & $s, $name & ': '& $svalue)
 
    EndIf
-
-EndFunc
-
-#Region		OLD PREFIX CHECK
-#cs
-func prefixcheck()
-   if $a[1] = 'yes' then		;if $is = yes, strip the YES prefix.
-	  if $is = 'yes' then $a[0] = _arraydelete($a, 1)
-
-	  if $echo then msgbox(0, 'prefix yes', $a[1] & ' - ' & $is)
-
-
-   ElseIf $a[1] = 'no' then		;if $is = no, strip the NO prefix
-	  if $is = 'no' then $a[0] = _arraydelete($a, 1)
-
-	  if $echo then msgbox(0, 'prefixcheck yes', $a[1] & ' - ' & $is)
-
-
-   Elseif $a[1] = 'is' and $a[2] = 'end' then		;reset $is = ''
-	  $is = ''
-		 if $echo then msgbox(0, 'is end', 'is flag is set to: ' & $is)
-
-   EndIf
-
-;if $a[1] then
-   if $a[1] = $only then $a[0] = _arraydelete($a, 1)	;	strip a1
-   if $a[1] = 'only' and $a[2] = 'end' then $only = ''	;	reset $only
-
-;EndIf
-
 EndFunc
 
 
+func loopwhile()	;WHILE		[ ]		[ while ]		[ true / false ]
+   if $echo then msgbox(0,'loop reached', $s)
 
-func istrue()
-   if $a[1] = 'is' then	;	[ if ]  [ X ]  [ oper ]  [ Y ]
-	  if $echo then msgbox(0, 'istrue', $a[2])
+   if $a[1] = 'while' then
+	  local $prefix = stringleft($history[number(ubound($history, 1)-1)], 2)
 
-	  if $a[2] = 'end' then
-	  Else
-		 if $echo then msgbox(0, 'istrue no end', $s)
+	  if $prefix = 'wn' or $prefix = 'in' or $prefix = 'x' then
+		 _ArrayAdd($history, 'wn' & $line)
 
-		 local $statement = '(' & $a[2] & ') ' & $a[3] & ' (' & $a[4] & ')'
-		 if execute($statement) = true Then
-			$is = 'yes'
-			if $echo then msgbox(0, 'istrue', $statement & ' is true')
+	  elseif $a[2] = 'true' then
+		 if $history[number(ubound($history, 1)-1)] = 'wy'&$line then
+			;same loop and its still true
+			if $echo then msgbox(0,'while else-true else-true', '')
 
 		 Else
-			$is = 'no'
-			if $echo then msgbox(0, 'istrue', $statement & ' is false')
+			;new or nested true loop
+			if $echo then msgbox(0,'while else-true else-false', '')	;set a history flag
+			_ArrayAdd($history, 'wy' & $line)
+
+		 EndIf
+
+	  elseif $a[2] = 'false' then
+		 if $history[number(ubound($history, 1)-1)] = 'wy'&$line then
+			;same loop but its false this time around
+			if $echo then msgbox(0,'while else-false else-true', '')
+			$history[number(ubound($history, 1)-1)] = 'wn'&$line
+
+		 Else
+			;new or nested false loop
+			if $echo then msgbox(0,'while else-false else-false', '')	;skip to end
+			_ArrayAdd($history, 'wn' & $line)
 
 		 EndIf
 
 	  EndIf
 
    EndIf
-
 EndFunc
 
 
-
-func isonly()
-   if $a[1] = 'only' then	;	[ only ]  [ X ]
-
-	  if $a[2] = 'end' then
-	  Else
-		 $only = $a[2]
-		 if $echo then msgbox(0, 'only', 'only flag is set to: ' & $a[2])
-
-	  EndIf
-
-   EndIf
-
-EndFunc
-
-
-#ce
-#EndRegion
-
-
-
-func prefixcheck()
-   if ubound($history,1) > 1 then
-	  ;CASE STRIP
-	  if $a[1] = $history[number(ubound($history,1) - 1)] then	;check if a[1] = rightmost $history element
-		 $a[0] = _arraydelete($a, 1)	;	if true, strip a1 (the case #) so the line runs
-		 if $echo then msgbox(0, 'prefixcheck - case', 'case flag removed')
-
-	  EndIf
-
-	  ;Y/N STRIP
-	  if $a[1] = 'y' then		;if recent = ifyes, strip the YES prefix.
-		 if $history[number(ubound($history,1) - 1)] = 'ifyes' then
-			$a[0] = _arraydelete($a, 1)
-			if $echo then msgbox(0, 'prefixcheck - y', 'ifyes found, y stripped')
-
-		 EndIf
-
-	  ElseIf $a[1] = 'n' then		;if recent = ifno, strip the NO prefix
-		 if $history[number(ubound($history,1) - 1)]= 'ifno' then
-			$a[0] = _arraydelete($a, 1)
-			if $echo then msgbox(0, 'prefixcheck - n', 'ifno found, n stripped')
-
-		 EndIf
-
-	  EndIf
-
-	  ;END, FLAG POP
-	  if $a[1] = 'end'	then	;reset $is = ''
-		 _arraydelete($history, number(ubound($history,1) - 1))
-		 if $echo then msgbox(0, 'prefixcheck - end', 'history flag removed')
-
-	  EndIf
-
-   EndIf
-
-EndFunc
-
-
-#cs
-lisp math expressions
-
-set num 10
-set x (ran 1 (num))
-
-first search for ()										;regex for ()
-   found: check if it contains spaces.					;finds (num)
-	  yes:  get the first word as the math command.		;skip
-			math command the other values.				;skip
-	  no: check if it contains only A-Z					;contains only a-z
-		 yes:  check if it's a set variable				;isdefined($s_num) = true?
-			   expand to that variable's value.			;if so, replace the regex result of the array with the variable's eval() value
-		 no:   it's just a regular number.				;skip
-
-#ce
-
-
-func iftrue()
-   if $a[1] = 'if' then	;	[ if ]  [ X ]  [ oper ]  [ Y ]
-	  _arraydisplay($a)
-
-	  if execute('(' & $a[2] & ') ' & $a[3] & ' (' & $a[4] & ')') Then
-		 ;IF-YES
-		 _arrayadd($history, 'ifyes')
-		 if $echo then msgbox(0, 'iftrue', 'ifyes flag set')
-
-	  Else
-		 ;IF-NO
-		 _arrayadd($history, 'ifno')
-		 if $echo then msgbox(0, 'iftrue', 'ifno flag set')
-
-	  EndIf		;history flag is set either ifyes/ifno
-
-   ;CASE STATEMENT
-   elseif $a[1] = 'case' and ubound($a,1) = 3 then	;	1[ if ] 	2[ X ]
-	  _arrayadd($history, $a[2])
-	  if $echo then msgbox(0, 'iftrue', 'case flag set')
-
-   EndIf
-
-EndFunc
-
-
-#Region
-;	if a1 is 'do'
-;	attempt to goto a2, if nothing is found just skip this
-;	if the label is found, goto it
-;	set a func-##
-;
-;
-;
-;
-;
-#EndRegion
-
-
-func subroutine()	;	[ ]   [ do ]   [ label ]
-   ;because of macros it might be impossible to find '(to) label' if they are using a macro that expands
-   ;macro expansion will need to occur during each iteration of the search below
-   ;we might need to rework the macro/variable expansions (math too?) so we can just input a line and have the result returned
-   ;we can probably just add a parameter and at the beginning and use that are the input instead of taking script[line]
-   ;for now the goal is to see if it can even work at all
-
-   ;the line numbers might need ot be line+1 to proceed to the next thing? i forget how script() is incrementing.
-
-   if $a[1] = 'do' and ubound($a,1) = 3 then 	;go to subroutine
+func subroutine()	;		[ ]   	[ do ]  	 [ label ]
+   if $a[1] = 'func' and ubound($a,1) = 3 then 	;go to subroutine
 	  local $count = 1
-	  local $target = string('to ' & $a[2])
-
+	  local $target = string('func ' & $a[2])
 	  if $echo then msgbox(0, 'subroutine goto', $s &@CRLF& 'target: ' & $target)
 
 	  While $count < $script[0]					;	iterate through script looking for 'to label'
 		 if $target = $script[$count] Then		;	'to label' found
-			_ArrayAdd($history, 'sub' & $line)	;	add flag
+			_ArrayAdd($history, 'fn' & $line)	;	add flag
 			$line = $count						;	set line to the found function
 			exitloop
 
@@ -569,38 +652,26 @@ func subroutine()	;	[ ]   [ do ]   [ label ]
 
 	  WEnd
 
-   EndIf
-
-   if $a[1] = 'return' then	;return from subroutine
+   elseif $a[1] = 'return' then	;return from subroutine
 	  if ubound($history,1) > 0 then
-		 if $echo then msgbox(0, 'reaches return','')
-
-			_arraydisplay($history)
+		 if $echo then msgbox(0, 'subroutine return','')
 
 		 local $target = $history[number(ubound($history,1) - 1)]	;target line = last element of history
-		 if StringLeft($target, 3) = 'sub' then $target = StringTrimLeft($target,3)
+		 if StringLeft($target, 2) = 'fn' then $target = StringTrimLeft($target,2)
 		 $line = $target
 
 		 if $echo then msgbox(0, 'subroutine return', 'line/target: ' & $line &@CRLF& 'history: ' & $history[number(ubound($history,1) - 1)])
-
-
 		 _ArrayPop($history)
 
 	  EndIf
 
-   endif
-
+   EndIf
 EndFunc
-
-
-
-
 
 
 
 func goto()
    if $a[1] = 'goto' then	;goto a label
-
 	  if $a[2] = 'line' then
 
 		 if $a[2] >= ubound($a, 1) then
@@ -638,10 +709,11 @@ func goto()
 	  EndIf
 
    EndIf
-
 EndFunc
 
 
+
+#Region	simple commands
 func say()
    if $a[1] = 'say' then ;say dialogue. a[2] is the name of the speaker, a[3]+ ($text) is the dialogue spoken
 	  local $speaker = $a[2]
@@ -730,8 +802,8 @@ EndFunc
 
 
 
-func end()
-   if $a[1] = 'end' then ;exit program
+func endscript()
+   if $a[1] = 'exit' then ;exit program
 	  exit
 
    EndIf
@@ -745,7 +817,7 @@ func rem()
    EndIf
 EndFunc
 
-func title()
+func title()	;set title?
    if $a[1] = 'title' then ;turn [echo] [on/off]
 	  $o_title = $a[2]
 	  WinSetTitle($idgame, "", $o_title)
@@ -775,3 +847,4 @@ EndFunc
 while 1
    sleep(1000)
 WEnd
+#EndRegion
