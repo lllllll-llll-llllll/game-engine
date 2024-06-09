@@ -33,7 +33,7 @@ AutoItSetOption("MouseCoordMode", 0)
 
    GUICtrlcreateGraphic(0,200,300,100,$SS_WHITERECT)
 
-   global $idspeaker = GUICtrlCreateLabel("", 10, 205, 100, 20)
+   global $idspeaker = GUICtrlCreateLabel("", 10, 205, 280, 20)
    guictrlsetdata(-1, "Speaker name")
 
    global $idspeech = GUICtrlCreateLabel("", 10, 225, 280, 65)
@@ -65,6 +65,7 @@ global $a[1000]
 global $s_time = 'time'
 
 global $choice[1]
+global $s_choice = ''
 global $history[1]
 	   $history[0] = 'history'
 global $o_chatspeed = 20
@@ -111,9 +112,10 @@ func master()
    if $echo then msgbox(0,'master', 'a[1] is ' & $a[1])
    local $prefix = stringleft($history[number(ubound($history, 1)-1)], 2)
 
+   ;NEGATIVE FLAG ROUTINES
    if $prefix = 'in' or $prefix = 'x' or $prefix = 'wn' Then
 	  switch $a[1]
-		 case 'if'
+		 case 'if', 'case'
 			iftrue()
 
 		 case 'end', 'else'
@@ -125,20 +127,25 @@ func master()
 		 case 'choice'
 			choice()
 
+		 ;case 'case' ;do i need to add in cases?
+			;kase()
+
 	  EndSwitch
 
+   ;CHOICE FLAG ROUTINES
    elseif $prefix = 'ch' Then
 	  choicebuild()
 	  end()
 	  _arraydisplay($choice)
 
+   ;NORMAL ROUTINES
    else
 	  switch $a[1]
 		 ;CONFIG
 		 case 'title'
 			title()
-		 case 'echo'
-			echo()
+		 case 'debug'
+			debug()
 
 
 		 ;OUTPUT
@@ -164,7 +171,7 @@ func master()
 
 
 		 ;MISC
-		 case 'if'
+		 case 'if', 'case'
 			iftrue()
 
 		 case 'end', 'else'
@@ -198,40 +205,12 @@ func master()
    EndIf
 EndFunc
 
-#cs
-CHOICE()
-   set flag: 	ch
-   the only routine to run during CHOICE- is choice().
 
-   $choice is an array
-
-   add only the first char to $choice[0]
-   _arrayadd full string to $choice
-   repeat
-
-   we end up with $choice = [123, '1 trade', '2 talk', '3 leave']
-   only END will stop this.
-END
-   add @CRLF to end of each array element greater than 0
-
-   convert the array to $choice[1+] to $string
-
-   send $string to dialogue
-   display $string
-
-   check for flag ch-
-   choose()
-
-CHOOSE()
-   pause script
-
-   split $string into individual chars
-
-   create hotkeys for each char
-#ce
 
 func choice()
-   _ArrayAdd($history, 'ch')
+   local $speaker = _ArrayToString($a, ' ', 2)	;convert array to string
+   msgbox(0, 'TEST', $speaker)
+   _ArrayAdd($history, 'ch' & $speaker)
 
 EndFunc
 
@@ -245,19 +224,27 @@ EndFunc
 
 
 func choose()
-   local $choicechars = $choice[0]
+   global $choicechars = $choice[0]
    _arraydelete($choice, 0)
    local $string = _arraytostring($choice, @CRLF)
-   dialogue('choice', $string)
+   local $speaker = stringtrimleft($history[number(ubound($history, 1)-1)], 2)	;strip [ch] from flag to get the speaker
+
+   dialogue($speaker, $string)
 
 EndFunc
 
 
+;BEFORE - ORDERING
+;prefixcheck - [ ]might eventually remove this as we have block flags for conditions instead of prefixes
+;expandmacro - [ ] might remove this just to keep things simple. in its place we can just implement keyword renaming
+;expandvars  - [x] necessary.
+;expandmath  - [x] necessary. this is what we will need to change if we want lisp-style (math x y) type stuff
+;setparams   - [ ] is this necessary anymore?
 
 func prefixcheck()
    if ubound($history,1) > 1 then
 	  ;CASE STRIP
-	  if $a[1] = $history[number(ubound($history,1) - 1)] then	;check if a[1] = rightmost $history element
+	  if $a[1] = string('ca' & $history[number(ubound($history,1) - 1)]) then	;check if a[1] = rightmost $history element
 		 $a[0] = _arraydelete($a, 1)	;	if true, strip a1 (the case #) so the line runs
 		 if $echo then msgbox(0, 'prefixcheck - case', 'case flag removed')
 
@@ -318,6 +305,68 @@ EndFunc
 
 
 
+func dialogue($speaker, $speech)
+   if IsDeclared('h_' & $speaker) then
+	  if $echo then msgbox(0,'head true', eval('h_' & $speaker), 100)
+	  GUICtrlSetImage($idhead, eval('h_' & $speaker))
+
+   EndIf
+
+   GUICtrlSetData($idspeaker, $speaker)
+
+   local $count = 1
+   While $count <= stringlen($speech)	;	chat chunker
+	  GUICtrlSetData($idspeech, StringLeft($speech, $count))
+	  sleep($o_chatspeed)
+	  $count = number($count + 1)
+
+   WEnd
+
+   local $prefix = stringleft($history[number(ubound($history, 1)-1)], 2)
+   $pause = true
+
+   if $prefix = 'ch' Then
+	  local $string = $choicechars
+	  local $length = StringLen($string)
+	  local $count = 1
+
+	  if $echo then msgbox(0, 'choose loop string', 'length:' & $length & '- string:' & $string)
+
+	  while $count <= $length
+		 local $char = StringMid($string, $count, 1)
+		 if $echo then msgbox(0, 'choose loop char', 'char:' & $char)
+		 HotKeySet($char, "continue")
+		 $count+=1
+
+	  WEnd
+
+	  while $pause = true
+		 sleep(50)
+
+	  WEnd
+
+   Else
+	  while $pause = true
+		 HotKeySet('{space}', "continue")
+
+	  WEnd
+
+   EndIf
+EndFunc
+
+
+func continue()		;pause until hotkey is pressed
+   If WinActive('[TITLE:' & $o_title & ']') Then
+	  $pause = false
+	  HotKeySet(@hotkeypressed)
+	  if $echo then msgbox(0, 'continue', @hotkeypressed & ':pressed - pause:' & $pause)
+	  $s_choice = string(@hotkeypressed)
+
+   EndIf
+EndFunc
+
+
+
 func iftrue()
    if $a[1] = 'if' then	;	[ if ]  [ true / false ]
 	  if $echo then _arraydisplay($a)
@@ -342,8 +391,9 @@ func iftrue()
 
 
    ;CASE STATEMENT
+   if $echo then msgbox(0,'case', 'ubound($a,1)=' & ubound($a,1))
    elseif $a[1] = 'case' and ubound($a,1) = 3 then	;	1[ if ] 	2[ X ]
-	  _arrayadd($history, 'c' & $a[2])
+	  _arrayadd($history, 'ca' & $a[2])
 	  if $echo then msgbox(0, 'iftrue', 'case flag set')
 
    EndIf
@@ -414,7 +464,7 @@ func expandmath();		evaluate math expressions
 	  Return
 
    Else
-	  local $regex[5]
+	 ;local $regex[5]
 	  while 1	;do regex and look for chars contained in { }		'(\(.*\))'	original, doesnt work		'(\([^()[:alpha:]]*\))'		revised, works
 		 local $regex = StringRegExp($s, '(\([^()[:alpha:]]*\))', $STR_REGEXPARRAYMATCH)	;return {5 + 5}
 		 if not @error Then ;need to get (1) from (1)text(2)
@@ -671,42 +721,39 @@ EndFunc
 
 
 func goto()
-   if $a[1] = 'goto' then	;goto a label
-	  if $a[2] = 'line' then
+   if $a[2] = 'line' then
 
-		 if $a[2] >= ubound($a, 1) then
-			$line = number(ubound($a, 1) - 1)
+	  if $a[2] >= ubound($a, 1) then
+		 $line = number(ubound($a, 1) - 1)
 
-		 Elseif $a[2] <= 0 then
-			$line = 0
+	  Elseif $a[2] <= 0 then
+		 $line = 0
+
+	  Else
+		 $line = $a[2]
+
+	  EndIf
+
+   else
+	  local $count = 1
+	  local $string = ''
+
+	  while $count < $script[0]
+		 $string = $script[$count]
+		 ;msgbox(0, 'comparing', $a[2] & '/' & $string, 100)
+
+		 if $string = $a[2] then
+			if $echo then msgbox(0, $script[$line], 'going to line ' &@CRLF& $script[$count])
+			$line =  $count
+			ExitLoop		;CHANGED
 
 		 Else
-			$line = $a[2]
+			;msgbox(0, 'false', 'checking line ' & $count, 100)
+			$count+=1
 
 		 EndIf
 
-	  else
-		 local $count = 1
-		 local $string = ''
-
-		 while $count < $script[0]
-			$string = $script[$count]
-			;msgbox(0, 'comparing', $a[2] & '/' & $string, 100)
-
-			if $string = $a[2] then
-			   if $echo then msgbox(0, $script[$line], 'going to line ' &@CRLF& $script[$count])
-			   $line =  $count
-			   ExitLoop		;CHANGED
-
-			Else
-			   ;msgbox(0, 'false', 'checking line ' & $count, 100)
-			   $count+=1
-
-			EndIf
-
-		 WEnd
-
-	  EndIf
+	  WEnd
 
    EndIf
 EndFunc
@@ -714,131 +761,66 @@ EndFunc
 
 
 #Region	simple commands
-func say()
-   if $a[1] = 'say' then ;say dialogue. a[2] is the name of the speaker, a[3]+ ($text) is the dialogue spoken
+func say()	;say dialogue. a[2] is the name of the speaker, a[3]+ ($text) is the dialogue spoken
 	  local $speaker = $a[2]
 	  _arraydelete($ap, 0)
 	  local $speech = _arraytostring($ap, ' ')
-
 	  dialogue($speaker, $speech)
 
-   EndIf
 EndFunc
 
 
 
-func dialogue($speaker, $speech)
-   if $echo then msgbox(0,'dialogue', $speaker & ': ' & $speech, 100)
+func sethead()	;0-# 	1-head 		2-w 	3-wizzar.jpg		set variable 'z' + a[2] to filename a[3]
+   Assign('h_' & $a[2], $a[3], 2)
 
-   if IsDeclared('h_' & $speaker) then
-	  if $echo then msgbox(0,'head true', eval('h_' & $speaker), 100)
-	  GUICtrlSetImage($idhead, eval('h_' & $speaker))
-
-   Else
-	  if $echo then msgbox(0,'head false', eval('h_' & $speaker), 100)
-
-   EndIf
-
-   GUICtrlSetData($idspeaker, $speaker)
-
-   local $count = 1
-   While $count <= stringlen($speech)	;	chat chunker
-	  GUICtrlSetData($idspeech, StringLeft($speech, $count))
-	  sleep($o_chatspeed)
-
-	  $count = number($count + 1)
-
-   WEnd
-
-   $pause = true
-   while $pause = true
-	  HotKeySet('{space}', "continue")
-
-   WEnd
-   ;sleep(300)
+   if $echo then msgbox(0, 'sethead', $a[2] &': '& eval('h_' & $a[2]), 100)
 
 EndFunc
 
 
-func continue()		;pause until space is pressed after dialogue finishes displaying text
-   If WinActive('[TITLE:' & $o_title & ']') Then
-	  $pause = false
-	  HotKeySet('{space}')
-	  if $echo then msgbox(0, 'continue', 'space pressed - ' & $pause)
 
-   EndIf
-EndFunc
-
-
-func sethead()	;0-# 	1-head 		2-w 	3-wizzar.jpg
-   if $a[1] = 'head' then ;set variable 'z' + a[2] to filename a[3]
-	  Assign('h_' & $a[2], $a[3], 2)
-
-	  if $echo then msgbox(0, 'sethead', $a[2] &': '& eval('h_' & $a[2]), 100)
-
-   EndIf
-EndFunc
-
-
-
-func show()	;	[#]	[show]	[picture.jpg]
-   if $a[1] = 'show' then ;change background to a[2]
+func show()	;	[show]	[picture.jpg] change background to a[2]
 	  GUICtrlSetImage($idshow, $a[2])
 	  GUISetState()
-
 	  if $echo then msgbox(0, "show", $a[2])
 
-   EndIf
 EndFunc
 
 
 
 func wait()
-   if $a[1] = 'wait' then ;pause for a[2] seconds
-	  sleep(number($a[2] * 1000))
+   sleep(number($a[2] * 1000))
 
-   EndIf
 EndFunc
-
 
 
 func endscript()
-   if $a[1] = 'exit' then ;exit program
-	  exit
-
-   EndIf
+   exit
 EndFunc
-
 
 
 func rem()
-   if $a[1] = 'rem' then ;line is remark/comment, do nothing
-
-   EndIf
-EndFunc
-
-func title()	;set title?
-   if $a[1] = 'title' then ;turn [echo] [on/off]
-	  $o_title = $a[2]
-	  WinSetTitle($idgame, "", $o_title)
-
-   EndIf
 EndFunc
 
 
-func echo()
-   if $a[1] = 'echo' then ;turn [echo] [on/off]
+func title()	;[title]	[name]
+   $o_title = $a[2]
+   WinSetTitle($idgame, "", $o_title)
 
-	  if $a[2] = 'off' then
-		 $echo = False
+EndFunc
 
-	  Elseif $a[2] = 'on' then
-		 $echo = True
-		  if $echo then msgbox(0, 'echo', 'echo turned on', 100)
 
-	  EndIf
+func debug()
+   if $a[2] = 'off' then
+	  $echo = False
+
+   Elseif $a[2] = 'on' then
+	  $echo = True
+	  if $echo then msgbox(0, 'echo', 'echo turned on', 100)
 
    EndIf
+
 EndFunc
 
 
