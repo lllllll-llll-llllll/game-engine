@@ -1,36 +1,122 @@
-echo on
-# debugging purposes
+title Video_Game_Name
 
-do routine1
-# goto line containing 'to routine1' and execute its code
+set variable 1
 
-do routine3
-# goto line containing 'to routine1' and execute its code
-
-ran random 1 100
-# set variable 'random' to a random integeter between 1 and 100
-
-say name [random]
-# output the value of 'random' as spoken by 'name'
-
-set gold 24
-# set variable 'gold' to 24
-
-set hp 14
-# set variable 'hp' to 14
-
-if [gold] = ([hp] + 10)
-# the expressions are expanded and evaluated. if true it runs lines starting with 'y', if false 'n'
-	y say name yes.
-	y say name gold is 34.
-	if [hp] = 14
-	# nested if
-		y say name hp is 14.
-		n say name hp isn't 14.
+while ([variable] < 5)
+	say speaker variable is [variable].
+	if ([variable] < 5)
+		set variable ([variable] + 1)
 	end
-	# end statement to close the preceding if condition
-	n say name no.
-	n say name gold isn't 34.
+end
+
+
+
+
+if ([variable] = 25)
+	say name_goes_here variable is [variable].
+else
+	say this_is_false variable isn't 25, it's [variable].
+end
+
+
+
+wait 1
+
+
+
+
+
+
+
+
+
+
+rem debug off
+rem title game
+
+
+choice Shopkeeper Jeff
+	1 Talk
+	2 Trade
+end
+
+if ([choice] = 2)
+	say test you chose 2 Trade.
+else
+	say test you chose 1 Talk.
+end
+
+
+wait 100
+
+
+set x 1
+set start [time]
+while ([x] < 10000)
+	set x ([x] + 1)
+end
+say finished start:[start], end:[time]
+
+
+set minute (right 2 ([time]))
+
+
+call routine1
+
+
+
+
+
+wait 100
+
+set y 1
+set x 1
+
+if (1 = 0)
+	while ([x] < 5)
+		set x ([x] + 1)
+		say name x [x] while1.
+	end
+	say name yes1.
+else
+	if (1 = 0)
+		while ([x] < 5)
+			set x ([x] + 1)
+			say name x [x] while2.
+		end
+		say name no1.
+	end
+	say name no2.
+end
+
+
+
+
+while ([y] < 3)
+	while ([x] < 3)
+		say name x [x]
+		set x ([x] + 1)
+	end
+	set x 1
+	set y ([y] + 1)
+	say name y [y]
+end
+
+
+
+
+
+
+if ([gold] = ([hp] + 10))
+	say name yes.
+	say name gold is 34.
+	if ([hp] = 14)
+		say name hp is 14.
+		say name hp isn't 14.
+	end
+else
+	say name no.
+	say name gold isn't 34.
 end
 
 case [gold]
@@ -38,24 +124,26 @@ case [gold]
 	10 say name gold is 10.
 end
 
-to routine1
-# defines a subroutine 'routine1'
-	do routine2
+func routine1
+	call routine2
 	say name this is routine1.
-	# the code of 'routine1'
+	say name routine 1.
 return
-# the end statement for subroutines to return from where 'do routine1' was called
 
-to routine2
+func routine2
 	say name this is routine2 called from within routine1.
 return
 
-to routine3
+func routine3
 	say name this is routine3.
 return
 
 wait 100
-# halt the script for '100' seconds
 exit
-# exit the script
 
+goto dog
+jump 24
+
+
+
+rem need to set subroutine flags next.
